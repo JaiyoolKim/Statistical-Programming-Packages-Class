@@ -71,7 +71,7 @@ In the R Terminal, type:
     \item git push
 \end{enumerate}
 
-A more detailed description is on the course website under *Submitting Homework*.
+A more detailed description is on the course website under *Submitting Homework* by Professor.
 
 ## Reminder on where to find Git help:  
 Read through the Git help Chapters 1 and 2. <https://git-scm.com/book/en/v2>
