@@ -39,6 +39,7 @@ Let's go ahead and save the file as is.  Save the file to the directory containi
 You will use this new R Markdown file for the remainder of this homework.
 
 ### I uploaded my 1st homework in my repository and applied for 'fork' and pull request to your repository.
+### Additionally, I invited you to my remote repository named 'JaiyoolKim/Statistical-Programming-Packages-Class-Fall-2019-'.
 
 ### Part A
 In this new Rmarkdown file, please type a paragraph about what you are hoping to get out of this class.  Include at least 3 specific desired learning objectives in list format.  
