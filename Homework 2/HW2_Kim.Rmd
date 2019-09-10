@@ -1,0 +1,785 @@
+---
+title: "HW2_Kim"
+author: "Jaiyool Kim"
+date: "9/7/2019"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Problem 1 : Work through the “R Programming E” lesson parts 4-7, 14 
+### (optional 12 - only takes 5 min). From the R command prompt:
+```{r eval=FALSE, echo=TRUE}
+install.packages("swirl")  
+library(swirl)  
+install_course("R_Programming_E")  
+swirl()  
+```
+I have taken all of the coures you mentioned at PM 10:21 on sunday (Sep. 8th), and sent you e-mails 
+related to the history I took.
+
+
+### Problem 2 : Create a new R Markdown file within your local GitHub repo folder 
+### (file–>new–>R Markdown–>save as).
+### The filename should be: HW2_lastname, i.e. for me it would be HW2_Settlage
+### You will use this new R Markdown file to solve problems 3-5.
+
+I made this R Markdown file whose names is HW2_Kim.
+
+
+
+### Problem 3 : In the lecture, there were two links to StackOverflow questions on why one should use version control. 
+### In your own words, summarize in 2-3 sentences how you think version control can help you in the classroom.
+
+Actually, I think version control can be very useful in a variety of ways in this class.
+
+First, version control can make it easier for professor and me to communicate with each other via GitHub and share the information simultaneously using good tools such as Forking and rewinding and Collaboration. Even if there are some comments related to appropriateness and necessities	of version control from solo data-analysts, I, as a novice of R & Github, also one of students learning the mechanisms of the infrastructure	of collaborating the information among researchers, these kinds of version controls would be needed for me as I think.
+
+Second, version control can allow myself to think numerous ways about solving problems or issues. It will be especially helpful when I consider doing different ways to conduct a certain kind of project or research as I think. Using Branches, I can keep track of all my branches of thinkings to do researches or any assignments, which can make me comfortable in terms of being arranged automatically even though I did not make the individual folder in my local repository (such as my MacBook).
+
+In addition to the above pros, there will be so many useful and informative points when using version control as I expect !!.
+
+### Problem 4
+
+### In this exercise, you will import, munge, clean and summarize datasets from Wu and Hamada’s Experiments:
+### Planning, Design and Analysis book you will use in the Spring. For each one, please weave your code and text to describe both your process and observations. Make sure you create a tidy dataset describing the variables, create a summary table of the data, note issues with the data.
+
+ a. Sensory data from five operators.
+ http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat
+
+ b. Gold Medal performance for Olympic Men’s Long Jump, year is coded as 1900=0.
+ http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat
+
+ c. Brain weight (g) and body weight (kg) for 62 species.
+  http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat
+
+ d. Triplicate measurements of tomato yield for two varieties of tomatos at three planting densities.
+ http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat
+
+
+
+
+
+## a. Sensory data from five operators.
+```{r eval=TRUE, echo=TRUE}
+Sensory.data <- read.csv("Sensory.csv",header=FALSE,sep=" ",stringsAsFactors = FALSE)
+Sensory.data
+
+## Set the column names as the follow :
+first.data.names <- c("ID","1st op.","2nd op.","3rd op.","4th op.","5th op.")
+
+## Check the type of the given data
+typeof(Sensory.data) # list
+
+## Change the form of the given data to matrix.
+Sensory.data <-as.matrix(Sensory.data)
+
+## Assign the column names using the character vector we made at the above line.
+colnames(Sensory.data) <- first.data.names
+
+## Show the full data set => The first two row should be eliminated for cleaning the data set.
+Sensory.data
+
+## Eliminate the first two row
+Sensory.data <- Sensory.data[-c(1:2),]
+
+## Show the (a little bit arranged) data set again.
+Sensory.data
+
+## From the above shown data set, we need to fill the NA value with corresponding the value located in ID column.
+## That is, for example, the (2,6)th element NA value should be exchanged with the (2,1)th element 4.3
+## Plus, the (2,1)th element should be filled with '2' (second ID number)
+
+## We need to adjust the data set for making what I have mentioned above.
+
+## Let's make the function that allows us to do the above thing.
+
+NA.correction.function <- function(data){
+  
+  for(i in 1 : nrow(data) )
+    for(j in 1 : ncol(data) )
+      
+      if(is.na(data[i,j])==TRUE) {
+        
+        data[i,j] <- data[i,1]
+        
+        data[i,1] <- i
+        
+      }
+  
+  return(data)
+  
+}
+
+
+Arranged.data <- NA.correction.function(Sensory.data)
+
+Arranged.data
+
+## We have completed what we wanted to do, however we have to align the ID number in order (1st column)
+## So I decide to weave another function to do that.
+
+ID.align.function <- function(data) {
+  
+  for (i in 1 : nrow(data) )
+    if(data[i,1]!=1) data[i,1] <- i
+    
+    return(data)
+  
+}
+
+## Let's apply this function to the data
+
+Arranged.data <- ID.align.function(Arranged.data)
+
+Arranged.data
+
+## Change the type of the elememt (from character to numeric) of arranged matrix
+mode(Arranged.data) <- "numeric"
+
+Arranged.data
+
+## Now, we can see the completely arranged data with the first column : ID,
+## and other remaining columns meaning the each operator, row : obs.
+## Naturally, each cell data means (except for first column data) sensory data corresponding to each operator.
+
+## Tabulate the arranged data set
+Table.Arranged.data <- as.table(Arranged.data)
+
+## Show the tabulated arranged data set.
+Table.Arranged.data
+
+
+
+## Summary table for arranged.data for each variable.
+
+summary(Arranged.data[,2]) # summary of sensory data from 1st operator
+
+summary(Arranged.data[,3]) # summary of sensory data from 2nd operator
+
+summary(Arranged.data[,4]) # summary of sensory data from 3rd operator
+
+summary(Arranged.data[,5]) # summary of sensory data from 4th operator
+
+summary(Arranged.data[,6]) # summary of sensory data from 5th operator
+
+## Visualization for each variable.
+
+# Histogram.
+
+hist(Arranged.data[,2],main="Histogram of sensory data from 1st operator",xlab="sensory data from 1st operator") 
+
+hist(Arranged.data[,3],main="Histogram of sensory data from 2nd operator",xlab="sensory data from 2nd operator") 
+
+hist(Arranged.data[,4],main="Histogram of sensory data from 3rd operator",xlab="sensory data from 3rd operator") 
+
+hist(Arranged.data[,5],main="Histogram of sensory data from 4th operator",xlab="sensory data from 4th operator") 
+
+hist(Arranged.data[,6],main="Histogram of sensory data from 5th operator",xlab="sensory data from 5th operator") 
+
+
+
+## Box plot.
+
+boxplot(Arranged.data[,2],main="Boxplot of sensory data from 1st operator")
+
+boxplot(Arranged.data[,3],main="Boxplot of sensory data from 2nd operator")
+
+boxplot(Arranged.data[,4],main="Boxplot of sensory data from 3rd operator")
+
+boxplot(Arranged.data[,5],main="Boxplot of sensory data from 4th operator")
+
+boxplot(Arranged.data[,6],main="Boxplot of sensory data from 5th operator")
+
+## There seems to be nothing special about each sensory data set obtained from each operator.
+
+```
+
+
+## b. Gold Medal performance for Olympic Men’s Long Jump, year is coded as 1900=0.
+```{r eval=TRUE, echo=TRUE}
+Longjump.data <- read.csv("LongJumpData.csv",header=T,sep=" ",stringsAsFactors = FALSE)
+Longjump.data
+
+
+nrow(Longjump.data) # 6
+ncol(Longjump.data) # 12
+
+
+## We need to transform the given data set with the # row : 22 (# of obs), and # col : 2 (Year (1900=0 format), Long jump).
+
+## First, we seperate the data by variables by Year, Long jump
+
+
+## By concatenating the 1st, 3rd, 5th, and 7th column data, we can get the vector of year data.
+year.expected.data <- c(Longjump.data[,1],Longjump.data[,3],Longjump.data[,5],Longjump.data[,7]) 
+
+length(year.expected.data)
+
+## By concatenating the 2nd, 4th, 6th,and 8th column data, we can get the vector of Long jump data.
+Long.jump.expected.data <- c(Longjump.data[,2],Longjump.data[,4],Longjump.data[,6],Longjump.data[,8]) 
+
+length(Long.jump.expected.data)
+
+## Make arranged data with matrix form (column : variable, row : observation)
+Arranged.data2 <- matrix(c(year.expected.data,Long.jump.expected.data),nrow=24,ncol=2,byrow=FALSE)
+
+Arranged.data2
+
+
+## We arrange the given data, roughly, but we have to change the first column data into 'day'form.
+## At first, we need to eliminate the last two row data because they are NAs which are useless.
+Arranged.data2 <- Arranged.data2[-c((nrow(Arranged.data2)-1):nrow(Arranged.data2)),]
+
+Arranged.data2
+
+## Procedures to change the 1st column data to day data.
+edates <- Arranged.data2[,1]
+
+edates
+
+edates[edates>=60] <- edates[edates>=60]
+edates <- as.Date(edates, origin="1900-01-01")
+
+edates
+
+## Success !!
+
+## Eliminate NA data in second column (Long jump data)data using the below code.
+Long.jump.expected.data <- Long.jump.expected.data[-c((length(Long.jump.expected.data)-1):length(Long.jump.expected.data))]
+
+Long.jump.expected.data
+
+
+## Now, we have to recombine this day data and Longjump data into matrix form.
+
+Arranged.data2 <- data.frame(
+   Id = c (1:22), 
+   Date=edates,
+   
+   Long.jump.record = Long.jump.expected.data, 
+   
+   stringsAsFactors = FALSE
+)
+
+Arranged.data2
+
+
+## Summary and Visualization
+
+summary(Arranged.data2$Long.jump.record)
+
+hist(Arranged.data2$Long.jump.record,main="Histogram of Long jump record",xlab = "Record of Long jump")
+
+boxplot(Arranged.data2$Long.jump.record,main="Boxplot of Long jump record")
+
+barplot(Arranged.data2$Long.jump.record,main="Barplot of Long jump record")
+
+## Time series plot
+
+Arranged.data2.ts <- ts(Arranged.data2[,-1])
+
+Arranged.data2.ts <- ts(Arranged.data2$Long.jump.record, frequency = 1, start=1901)
+
+plot.ts(Arranged.data2.ts,xlab="year",ylab="Long Jump Record",main="TS plot for Long Jump Record series",col=2,lwd=2)
+
+
+```
+
+
+## c. Brain,body, and weight data
+```{r eval=TRUE, echo=TRUE}
+
+Brain.Body.weight.data <- read.csv("BrainandBodyWeight.csv",header=T,sep=" ",stringsAsFactors = FALSE)
+Brain.Body.weight.data 
+
+ncol(Brain.Body.weight.data) # 12
+nrow(Brain.Body.weight.data) # 21
+
+## We need to transform the given data set with the # row : 62, and # col : 2 (Brain Weight (g), Body Weight(kg)).
+## First, we seperate the data by variables by Brain weight, Body weight
+
+
+## By concatenating the 3rd, 4th, and 6th column data, we can get the vector of brain weight data.
+Brain.Weight.expected.data <- c(Brain.Body.weight.data[,3],Brain.Body.weight.data[,4],Brain.Body.weight.data[,6]) 
+
+## By concatenating the 1st, 2nd, and 5th column data, we can get the vector of Body weight data.
+Body.Weight.expected.data <- c(Brain.Body.weight.data[,1],Brain.Body.weight.data[,2],Brain.Body.weight.data[,5]) 
+
+
+## Make arranged data with matrix form (column : variable, row : observation)
+Arranged.data3 <- matrix(c(Brain.Weight.expected.data,Body.Weight.expected.data),nrow=63,ncol=2,byrow=FALSE)
+
+
+## Set the column names and row number
+colnames(Arranged.data3) <- c("Brain.Weight(g)","Body.Weight(kg)")
+
+rownames(Arranged.data3) <- c(1:63)
+
+
+# Arranged.data2
+
+Table.Arranged.data3 <- as.table(Arranged.data3)
+
+## Show the arranged data set.
+Table.Arranged.data3
+
+## Summary table for arranged.data for each variable.
+summary(Arranged.data3)
+
+
+## Visualization for each variable.
+
+# Histogram.
+
+hist(Arranged.data3[,1],main="Histogram for brain weight(g) data",xlab="brain weight(g) data") # for brain weight
+
+hist(Arranged.data3[,2],main="Histogram for body weight(kg) data",xlab="body weight(kg) data") # for body weight
+
+## From the each variable's histograms, we can find the fact that most of the observed data
+## seems to aggregate in the interval (0,1000)
+
+## C.f) What if taking the 'hist' function with different breaks and xlimit ?
+hist(Arranged.data3[,1],breaks=200,xlim=c(0,8000),main="c.f) histogram for figuring out the plurality")
+
+## We should be careful of plurality !!! => we shouldn't say the dis. of this data easily.
+## because chances are that the shape of the histogram can be seen differently according to the number
+## of breaks in 'hist' built-in function.
+
+
+## Box plot for each variable
+boxplot(Arranged.data3[,1],main="Boxplot of Brain weight(g)")# for brain weight
+
+boxplot(Arranged.data3[,2],main="Boxplot of Body weight(kg)")# for body weight
+
+## There seems to be some outliars within the each variable data sets.
+
+
+```
+
+
+## d. Triplicate measurements of tomato yield for two varieties of tomatoes at three planting densities.
+```{r eval=TRUE, echo=TRUE}
+library(stringr)
+## In terms of this data set, I will use the 'readLines' Command for reading the raw data set.
+Triplicate.meas.tomatoes.at3planting.den.data <- readLines(con="tomato.csv")
+
+## Arrange the raw data set a little bit.
+Triplicate.meas.tomatoes.at3planting.den.data <- Triplicate.meas.tomatoes.at3planting.den.data[-1]
+
+Triplicate.meas.tomatoes.at3planting.den.data<-as.matrix(Triplicate.meas.tomatoes.at3planting.den.data,nrow=3,ncol=4)
+
+Triplicate.meas.tomatoes.at3planting.den.data
+
+## We need to handle with the repeated measure.
+
+## The way I choose to deal with repeated measure is assigning the column vector for each kind of tomato observation.
+
+## Let's make the numeric vector of measure of first kind of tomato
+
+tempo.first.tomato.repeated.measure <- Triplicate.meas.tomatoes.at3planting.den.data[2,]
+
+## Split the 'tempo.first.tomato.repeated.measure' data for obtaining the individual data point.
+
+tempo.first.tomato.repeated.measure2 <- str_split(tempo.first.tomato.repeated.measure, ",") # sep : comma
+
+tempo.first.tomato.repeated.measure2
+## Even if we have done the above procedure, there seems to need more efforts to get the individual obseravations, so I did the followings :
+
+
+## 2nd, 5th, 8th, and 9th obs. data from first kind of tomato can be received by just following indexing
+Second.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure2[[1]][2]
+
+Fifth.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure2[[1]][4]
+
+Eightth.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure2[[1]][6]
+
+Nineth.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure2[[1]][7]
+
+## The thing is that we should break into multi parts what is composed of several things (such as combination of numeric and character, or that of two numeric values).
+tempo.first.tomato.repeated.measure.first. <- str_split(tempo.first.tomato.repeated.measure2[[1]][1], " ")
+
+tempo.first.tomato.repeated.measure.first.
+
+
+
+First.data.in.the.first.tomato.repeated.measure <-  tempo.first.tomato.repeated.measure.first.[[1]][12]
+
+First.data.in.the.first.tomato.repeated.measure
+
+
+
+
+tempo.first.tomato.repeated.measure.third. <- str_split(tempo.first.tomato.repeated.measure2[[1]][3], " ")
+
+tempo.first.tomato.repeated.measure.third. 
+
+
+
+Third.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure.third.[[1]][1] 
+
+Third.data.in.the.first.tomato.repeated.measure
+
+
+
+
+Fourth.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure.third.[[1]][4]
+
+Fourth.data.in.the.first.tomato.repeated.measure
+
+
+
+
+
+tempo.first.tomato.repeated.measure.fifth. <- str_split(tempo.first.tomato.repeated.measure2[[1]][5], " ")
+
+
+tempo.first.tomato.repeated.measure.fifth.
+
+
+
+
+
+Sixth.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure.fifth.[[1]][1] 
+
+Sixth.data.in.the.first.tomato.repeated.measure
+
+
+
+
+Seventh.data.in.the.first.tomato.repeated.measure <- tempo.first.tomato.repeated.measure.fifth.[[1]][4] 
+
+Seventh.data.in.the.first.tomato.repeated.measure
+
+# By weaving the above code, we can get the individual obs !!
+
+
+## Now, we can concatenate repeated measures of first tomato (# : 9)
+First.tomato.repeated.measure.vector <- c(First.data.in.the.first.tomato.repeated.measure, Second.data.in.the.first.tomato.repeated.measure,                                           Third.data.in.the.first.tomato.repeated.measure,                                          Fourth.data.in.the.first.tomato.repeated.measure,                                          Fifth.data.in.the.first.tomato.repeated.measure,                                          Sixth.data.in.the.first.tomato.repeated.measure,                                          Seventh.data.in.the.first.tomato.repeated.measure,                                          Eightth.data.in.the.first.tomato.repeated.measure,                                          Nineth.data.in.the.first.tomato.repeated.measure)
+
+First.tomato.repeated.measure.vector <- as.numeric(First.tomato.repeated.measure.vector)
+
+
+First.tomato.repeated.measure.vector
+## It is the numeric vector composed of obs. of first kind of tomato.
+
+
+
+## Do the same procedure to make the numeric vector of measure of Second kind of tomato
+
+tempo.second.tomato.repeated.measure <- Triplicate.meas.tomatoes.at3planting.den.data[3,]
+
+
+
+tempo.second.tomato.repeated.measure2 <- str_split(tempo.second.tomato.repeated.measure, ",")
+
+tempo.second.tomato.repeated.measure2
+
+
+Second.data.in.the.second.tomato.repeated.measure <- tempo.second.tomato.repeated.measure2[[1]][2]
+
+Third.data.in.the.second.tomato.repeated.measure <- tempo.second.tomato.repeated.measure2[[1]][3]
+
+
+Fourth.data.in.the.second.tomato.repeated.measure <- tempo.second.tomato.repeated.measure2[[1]][4]
+
+
+Fifth.data.in.the.second.tomato.repeated.measure <- tempo.second.tomato.repeated.measure2[[1]][5]
+
+Eightth.data.in.the.second.tomato.repeated.measure <- tempo.second.tomato.repeated.measure2[[1]][7]
+
+Nineth.data.in.the.second.tomato.repeated.measure <- tempo.second.tomato.repeated.measure2[[1]][8]
+
+
+
+tempo.second.tomato.repeated.measure.first. <- str_split(tempo.second.tomato.repeated.measure2[[1]][1], " ")
+
+tempo.second.tomato.repeated.measure.first.
+
+
+First.data.in.the.second.tomato.repeated.measure <-  tempo.second.tomato.repeated.measure.first.[[1]][4]
+
+First.data.in.the.second.tomato.repeated.measure
+
+
+tempo.second.repeated.measure.sixth. <- str_split(tempo.second.tomato.repeated.measure2[[1]][6], " ")
+
+tempo.second.repeated.measure.sixth.
+
+
+
+Sixth.data.in.the.second.tomato.repeated.measure <- tempo.second.repeated.measure.sixth.[[1]][1] 
+
+Sixth.data.in.the.second.tomato.repeated.measure
+
+
+
+Seventh.data.in.the.second.tomato.repeated.measure <- tempo.second.repeated.measure.sixth.[[1]][4]
+
+Seventh.data.in.the.second.tomato.repeated.measure
+
+
+
+
+
+## Now, we can concatenate repeated measures of the second kind of tomato (# : 9)
+
+Second.tomato.repeated.measure.vector <- c(First.data.in.the.second.tomato.repeated.measure, Second.data.in.the.second.tomato.repeated.measure,                                           Third.data.in.the.second.tomato.repeated.measure,                                          Fourth.data.in.the.second.tomato.repeated.measure,                                          Fifth.data.in.the.second.tomato.repeated.measure,                                          Sixth.data.in.the.second.tomato.repeated.measure,                                          Seventh.data.in.the.second.tomato.repeated.measure,                                          Eightth.data.in.the.second.tomato.repeated.measure,                                          Nineth.data.in.the.second.tomato.repeated.measure)
+
+
+
+Second.tomato.repeated.measure.vector <- as.numeric(Second.tomato.repeated.measure.vector)
+
+
+Second.tomato.repeated.measure.vector
+
+
+## The next thing we should do is the arranging the data set can look comfortable.
+## I will use the 'list' form to look this arranged data set nice to viewers.
+
+
+
+## Assign each (repeated) data set to the each kind of tomato and each density 'list' space (refer to the following R code)
+ 
+ 
+ First.Tomato.First.Density <- new.env()
+ 
+ First.Tomato.First.Density$first.obs<- First.tomato.repeated.measure.vector[1]
+ 
+ First.Tomato.First.Density$second.obs<- First.tomato.repeated.measure.vector[2]
+ 
+ First.Tomato.First.Density$third.obs<- First.tomato.repeated.measure.vector[3]
+ 
+ First.Tomato.First.Density <- as.list(First.Tomato.First.Density)
+ 
+ 
+ First.Tomato.Second.Density <- new.env()
+ 
+ First.Tomato.Second.Density$first.obs<- First.tomato.repeated.measure.vector[4]
+ 
+ First.Tomato.Second.Density$second.obs<- First.tomato.repeated.measure.vector[5]
+ 
+ First.Tomato.Second.Density$third.obs<- First.tomato.repeated.measure.vector[6]
+ 
+ First.Tomato.Second.Density <- as.list(First.Tomato.Second.Density)
+ 
+ 
+ 
+ First.Tomato.Third.Density <- new.env()
+ 
+ First.Tomato.Third.Density$first.obs<- First.tomato.repeated.measure.vector[7]
+ 
+ First.Tomato.Third.Density$second.obs<- First.tomato.repeated.measure.vector[8]
+ 
+ First.Tomato.Third.Density$third.obs<- First.tomato.repeated.measure.vector[9]
+ 
+ First.Tomato.Third.Density <- as.list(First.Tomato.Third.Density)
+ 
+ 
+
+ 
+ 
+ 
+ 
+  Second.Tomato.First.Density <- new.env()
+ 
+ Second.Tomato.First.Density$first.obs<- Second.tomato.repeated.measure.vector[1]
+ 
+ Second.Tomato.First.Density$second.obs<- Second.tomato.repeated.measure.vector[2]
+ 
+ Second.Tomato.First.Density$third.obs<- Second.tomato.repeated.measure.vector[3]
+ 
+ Second.Tomato.First.Density <- as.list(Second.Tomato.First.Density)
+ 
+ 
+ 
+ 
+ Second.Tomato.Second.Density <- new.env()
+ 
+ Second.Tomato.Second.Density$first.obs<- Second.tomato.repeated.measure.vector[4]
+ 
+ Second.Tomato.Second.Density$second.obs<- Second.tomato.repeated.measure.vector[5]
+ 
+ Second.Tomato.Second.Density$third.obs<- Second.tomato.repeated.measure.vector[6]
+ 
+ Second.Tomato.Second.Density <- as.list(Second.Tomato.Second.Density)
+ 
+ 
+ 
+ 
+ Second.Tomato.Third.Density <- new.env()
+ 
+ Second.Tomato.Third.Density$first.obs<- Second.tomato.repeated.measure.vector[7]
+ 
+ Second.Tomato.Third.Density$second.obs<- Second.tomato.repeated.measure.vector[8]
+ 
+ Second.Tomato.Third.Density$third.obs<- Second.tomato.repeated.measure.vector[9]
+ 
+ Second.Tomato.Third.Density <- as.list(Second.Tomato.Third.Density)
+ 
+ 
+ 
+ 
+ Arranged.data4 <- list(First.Tomato.First.Density, First.Tomato.Second.Density, First.Tomato.Third.Density,
+                   Second.Tomato.First.Density, Second.Tomato.Second.Density, Second.Tomato.Third.Density)
+ 
+ 
+ 
+ names(Arranged.data4)[[1]] <- "First Tomato obtained from 1st density"
+ 
+ names(Arranged.data4)[[2]] <- "First Tomato obtained from 2nd density"
+ 
+ names(Arranged.data4)[[3]] <- "First Tomato obtained from 3rd density"
+ 
+ names(Arranged.data4)[[4]] <- "Second Tomato obtained from 1st density"
+ 
+ names(Arranged.data4)[[5]] <- "Second Tomato obtained from 2nd density"
+ 
+ names(Arranged.data4)[[6]] <- "Second Tomato obtained from 3rd density"
+ 
+ 
+ Arranged.data4 
+ 
+ ## The above arranged data set has the form of list which can allow us to seize the structure of the given data set !!!
+ 
+ 
+ 
+ 
+## Summary table for arranged.data for each tomato from each density
+ 
+summary(as.numeric(Arranged.data4$`First Tomato obtained from 1st density`))
+
+summary(as.numeric(Arranged.data4$`First Tomato obtained from 2nd density`))
+
+summary(as.numeric(Arranged.data4$`First Tomato obtained from 3rd density`))
+
+summary(as.numeric(Arranged.data4$`Second Tomato obtained from 1st density`))
+
+summary(as.numeric(Arranged.data4$`Second Tomato obtained from 2nd density`))
+
+summary(as.numeric(Arranged.data4$`Second Tomato obtained from 3rd density`))
+
+
+
+## Visualization for each tomato from each density.
+
+
+
+## Box plot for each tomato from each density
+
+boxplot(as.numeric(Arranged.data4$`First Tomato obtained from 1st density`),main="Boxplot for First Tomato obtained from 1st density")
+        
+boxplot(as.numeric(Arranged.data4$`First Tomato obtained from 2nd density`),main="Boxplot for First Tomato obtained from 2nd density")
+
+boxplot(as.numeric(Arranged.data4$`First Tomato obtained from 3rd density`),main="Boxplot for First Tomato obtained from 3rd density")
+
+boxplot(as.numeric(Arranged.data4$`Second Tomato obtained from 1st density`),main="Boxplot for Second Tomato obtained from 1st density")
+
+boxplot(as.numeric(Arranged.data4$`Second Tomato obtained from 2nd density`),main="Boxplot for Second Tomato obtained from 2nd density")
+
+boxplot(as.numeric(Arranged.data4$`Second Tomato obtained from 3rd density`),main="Boxplot for Second Tomato obtained from 3rd density")
+
+
+## There doensn't seem to be no outliar or weird points when we see the a variety of plots.
+
+
+```
+### Problem 5
+### In the swirl lessons, you played with a dataset “plants”. Our ultimate goal is to see if there is a relationship between pH and Foliage_Color. Consider a statistic that combines the information in pH_Min and pH_Max.
+### Clean, summarize and transform the data as appropriate. Use function 'lm' to test for a relationship. Report both the coefficients and ANOVA results in table form.
+
+### Note that if you didn’t just do the swirl lesson, it is now not available. Add the following code to your project to retrieve it.
+
+```{r eval=TRUE, echo=TRUE}
+library(swirl)  
+
+# Path to data
+.datapath <- file.path(path.package('swirl'), 'Courses',
+'R_Programming_E', 'Looking_at_Data','plant-data.txt')
+
+# Read in data
+plants <- read.csv(.datapath, strip.white=TRUE, na.strings="")
+
+# Remove annoying columns
+.cols2rm <- c('Accepted.Symbol', 'Synonym.Symbol')
+plants <- plants[, !(names(plants) %in% .cols2rm)]
+
+# Make names pretty
+names(plants) <- c('Scientific_Name', 'Duration', 'Active_Growth_Period',
+'Foliage_Color', 'pH_Min', 'pH_Max','Precip_Min', 'Precip_Max',
+'Shade_Tolerance', 'Temp_Min_F')
+
+
+## plants : too messy data set (because of too many NAs) => need to be cleaned for appropriate analysis.
+
+plants.NA.removed <- na.omit(plants)
+
+## plants.NA.removed
+
+
+## Statistic : range = plants$pH_Max - plants$pH_Min ( we will use this statistic value as Dependent Variable(Y) )
+
+# plants$pH_Min
+# plants$pH_Max
+
+plants.range <- plants.NA.removed$pH_Max - plants.NA.removed$pH_Min
+
+plants.range
+
+summary(plants.range)
+
+boxplot(plants.range)
+
+
+
+Foliage_Color <- plants.NA.removed$Foliage_Color  ## We use this factor or explanatory variable (X) for ANOVA
+
+summary(Foliage_Color)
+
+
+## Data cleaning 
+
+## What we need is the set of pHs and Foliage_color data set
+
+required.data.set <- data.frame(plants.range,Foliage_Color)
+
+required.data.set
+
+## With the above cleaned data set, we do the ANOVA.
+
+lm.ph.Foliage.color <- lm(plants.range ~ Foliage_Color,data=required.data.set)
+
+anova(lm.ph.Foliage.color)
+## ANOVA TABLE 
+## From the above ANOVA table, the $H_0 : \beta_1=\beta_2=\beta_3=\beta_4=\beta_5 =0$ has been rejected based on the p-value : 0.001141 (based on significance level (alpha) = 0.05). It implies there is at least one of the Foliage colors has the significant relationship with plants_range
+
+
+
+summary(lm.ph.Foliage.color)
+## Summary table
+## From the above Summary table, we can figure out that between (Foliage-Color-Gray-Green and Plants_range),
+## (Foliage-ColorGreen and Plants_range), there are significant relationship under the p-value 0.0101, 0.0371  respectively. (based on significance level (alpha) = 0.05)
+
+```
+
+
+### Problem 6
+### Finish this homework by pushing your changes to your repo. In general, your workflow for this should be:
+
+ 1. git pull – to make sure you have the most recent repo
+
+ 2. In R: do some work
+
+ 3. git add – this tells git to track new files
+
+ 4. git commit – make message INFORMATIVE and USEFUL
+
+ 5. git push – this pushes your local changes to the repo
+
+### If you have difficulty with steps 1-5, git is not correctly or completely setup. See me for help.
