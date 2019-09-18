@@ -23,7 +23,7 @@ install_course("Getting and Cleaning Data")
 
 swirl()  
 ```
-I took all the courses prof. had mentioned.
+## I took all the courses prof. had mentioned.
 
 
 ## Problem 2
@@ -34,7 +34,7 @@ The filename should be: HW3_lastname, i.e. for me it would be HW3_Settlage
 
 You will use this new R Markdown file to solve the following problems.
 
-I followed your instructions !!
+## I followed your instructions !!
 
   
 ## Problem 3
