@@ -1,0 +1,259 @@
+---
+title: "HW3_Kim"
+author: "Jaiyool Kim"
+date: "9/17/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This week, we spoke about R and version control, munging and 'tidying' data, good programming practice and finally some basic programming building blocs. To begin the homework, we will for the rest of the course, start by loading data and then creating tidy data sets.  
+
+## Problem 1
+
+Work through the "Getting and Cleaning Data" lesson parts 3 and 4.
+
+From the R command prompt:  
+```{r eval=FALSE}
+library(swirl)  
+
+install_course("Getting and Cleaning Data")
+
+swirl()  
+```
+I took all the courses prof. had mentioned.
+
+
+## Problem 2
+
+Create a new R Markdown file within your local GitHub repo folder (file-->new-->R Markdown-->save as).
+
+The filename should be: HW3_lastname, i.e. for me it would be HW3_Settlage
+
+You will use this new R Markdown file to solve the following problems.
+
+I followed your instructions !!
+
+  
+## Problem 3
+
+Redo Problem 4 parts a-d from last time using the tidyverse functions and piping.
+
+## a. Sensory data from five operators.    
+## <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat> 
+```{r eval=TRUE, echo=TRUE}
+
+library(dplyr)
+library(tidyr)
+library(knitr)
+
+## Load the raw data via webpage
+  url<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+  Sensory_raw<-read.table(url, header=F, skip=1, fill=T, stringsAsFactors = F)
+    
+  ## see the raw data table.
+    kable(Sensory_raw[c(1:8),] ,caption="Raw data") 
+
+    Sensory_tidy<-Sensory_raw[-1,]
+    
+  
+    Sensory_tidy_a<-filter(.data = Sensory_tidy,V1 %in% 1:10) %>%
+                    rename(Item=V1,V1=V2,V2=V3,V3=V4,V4=V5,V5=V6)
+    
+    Sensory_tidy_b<-filter(.data = Sensory_tidy,!(V1 %in% 1:10)) %>%
+                    mutate(Item=rep(as.character(1:10),each=2)) %>%
+                    mutate(V1=as.numeric(V1)) %>%
+                    select(c(Item,V1:V5))
+    
+    Sensory_tidy<-bind_rows(Sensory_tidy_a,Sensory_tidy_b)
+    
+    colnames(Sensory_tidy)<-c("Item",paste("Person",1:5,sep="_"))
+    
+    Sensory_tidy<-Sensory_tidy %>%  
+        gather(Person,value,Person_1:Person_5) %>%  
+        mutate(Person = gsub("Person_","",Person)) %>%
+        arrange(Item)
+    
+  ## See the final arranged Sensory data.
+    kable((arrange(Sensory_tidy,Item)[c(1:30),]),caption="Arranged_Sensory_Tidy data")
+```
+
+
+## b. Gold Medal performance for Olympic Men's Long Jump, year is coded as 1900=0.  
+## <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat>  
+```{r eval=TRUE, echo=TRUE}
+
+## Load the raw data via webpage
+  url2<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat"
+  Goldmedal_raw<-read.table(url2, header=FALSE, skip=1, fill=TRUE, stringsAsFactors = F)
+    
+    ## see the raw data table.
+    kable(Goldmedal_raw[c(1:8),], caption="Raw data") 
+
+    ## We will follow the similar procedure to data set a.
+    
+    ## Tidy.set a. (for handling with year data)
+    Goldmedal_tidy_a<-select(Goldmedal_raw,c(V1,V3,V5,V7))%>%
+      
+    ## Use gather function from odd^th columns to collect the year data.  
+    gather(From.odd.th.column,Year,V1:V7)%>%
+      
+    ## Transform the Year variable column data to real year format based on 1900=0 criterion.
+    mutate(YEAR=Year+1900)%>%
+    
+    ## Use select function to fetch only the Year variable.     
+    select(YEAR)
+    
+    
+    
+    ## Tidy.set b. (for handling Long jump data)
+    Goldmedal_tidy_b<-select(Goldmedal_raw,c(V2,V4,V6,V8))%>%
+    
+    ## Use gather function from even^th columns to collect Long jump data.     
+    gather(From.even.th.column,Long_Jump,V2:V8)%>%
+    
+    ## Use select function to fetch only the Long-jump variable.  
+    select(Long_Jump)
+    
+    
+    ## Combine the two tidy data sets. (a & b)
+    Goldmedal_tidy<-cbind(Goldmedal_tidy_a,Goldmedal_tidy_b)
+    
+    ## Remove the NAs in the year variable.
+    Goldmedal_tidy<-filter(.data = Goldmedal_tidy, !(YEAR %in% NA))
+    
+    ## Show the final arranged Goldmedal_tidy data set.
+    kable(Goldmedal_tidy[c(1:30),], caption="Arranged_Goldmedal_Tidy data")
+
+```
+
+
+## c. Brain weight (g) and body weight (kg) for 62 species.    
+## <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat>  
+```{r eval=TRUE, echo=TRUE}
+
+## Load the raw data via webpage
+  url3<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat"
+  Brain.and.body.raw<-read.table(url3, header=FALSE, skip=1, fill=TRUE, stringsAsFactors = F)
+  
+  ## See the raw data table.
+    kable(Brain.and.body.raw[c(1:8),], caption="Raw data") 
+    ## Looks like there are NAs.
+    
+    ## We will also follow the similar procedure to data set a &b
+    
+    ## Tidy.set a. (for handling with body data (concretely speaking, 
+    ## the data expected to be body data))
+    Brain.and.body_tidy_a<-select(Brain.and.body.raw,c(V1,V3,V5))%>%
+      
+    ## Use gather function from odd^th columns to collect the body data.   
+    gather(From.the.odd.th.columns,Body.data,V1:V5)%>%
+      
+    ## Use select function to fetch only the Body variable.  
+    select(Body.data)
+    
+    
+    
+    ## Tidy.set b. (for handling with brain data (concretely speaking, 
+    ## the data expected to be brain data))
+    Brain.and.body_tidy_b<-select(Brain.and.body.raw,c(V2,V4,V6))%>%
+      
+    ## Use gather function from odd^th columns to collect the brain data.   
+    gather(From.the.odd.th.columns,Brain.data,V2:V6)%>%
+      
+    ## Use select function to fetch only the Brain variable.  
+    select(Brain.data)
+    
+    
+    ## Combine two tidy. data sets
+    Brain.and.body_tidy<-cbind(Brain.and.body_tidy_a,Brain.and.body_tidy_b)
+    
+    ## Remove the NAs in the Brain variable.
+    Brain.and.body_tidy<-filter(.data = Brain.and.body_tidy, !(Brain.data %in% NA))
+  
+     ## See the final arranged Brain.and.body data.
+    kable((arrange(Brain.and.body_tidy,Brain.data,Body.data)[c(1:50),])
+          ,caption="Arranged_Brainbody_Tidy data")
+```
+
+## d. Triplicate measurements of tomato yield for two varieties of tomatos at three planting densities.  
+## <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat>  
+```{r eval=TRUE, echo=TRUE}
+## Load the raw data via webpage
+  url4<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat"
+  Tomato.raw<-read.delim(url4,header = FALSE,sep="",fill=TRUE, stringsAsFactors = F)
+  
+  ## See the raw data table.
+    kable(Tomato.raw[c(1:15),], caption="Raw data") 
+
+  ## Firstly, we remove the first row
+     Tomato_tidy<-Tomato.raw[-1,]
+    
+    ## Use slice function to see the second, third row data.
+    Tomato_tidy_a<-slice(.data = Tomato_tidy, 2:3)%>%
+      
+    ## Use separate function to separate the second, third, and fourth column 
+    ## of Tomato_tidy_a data set to divide the values in order we want.
+    separate(V2,into=c("1","2","3"),sep = ",")%>%
+      
+    separate(V3,into=c("4","5","6"),sep = ",")%>%
+      
+    separate(V4,into=c("7","8","9"),sep = ",")%>%
+    
+    ## Renaming for our convenience in visual    
+    rename(criterion.value=1,v1=2,v2=3,v3=4,v4=5,v5=6,v6=7,v7=8,v8=9,v9=10)%>%
+    select(c(criterion.value,v1:v9))
+
+
+    Tomato_tidy_a<-as.data.frame(t(Tomato_tidy_a))
+    
+    
+    Tomato_tidy_a_1<-Tomato_tidy_a[-1,]
+    
+    Tomato_tidy_a_2<-Tomato_tidy_a_1%>%
+    
+    ## Use mutate function to make the repeated measurement variable  
+      
+    mutate(measure=rep(1:3,each=3),)%>%
+      
+    mutate(measurement.variable=(measure*1))%>%
+      
+    mutate(measurement.variable=as.character(measurement.variable))
+    
+    
+    
+    Tomatotidy_a_3<-Tomato_tidy_a_2%>%
+      
+    
+    select(measurement.variable,V1,V2)%>%
+    rename(life1=V1,PusaEarlyDwarf=V2)
+    
+    
+    Tomatotidy_a_4<-Tomatotidy_a_3%>%
+    gather(Treatment,value,life1:PusaEarlyDwarf)
+    
+    ## Fully tidy tomato data set : This data should be kept including NAs in my opinion.
+    Tomato_fully_tidy<-Tomatotidy_a_4%>%
+    arrange(measurement.variable)  
+  
+    ## To see the Tidy tomato data set of itself (including NAs),
+    ## I didn't use kable.
+    Tomato_fully_tidy
+    
+```
+## Problem 4
+
+Finish this homework by pushing your changes to your repo.  In general, your workflow for this should be:  
+
+1. In terminal: git pull  -- to make sure you have the most recent local repo  
+2. In terminal: do some work  
+3. In terminal: git add -- check files you want to commit  
+4. In terminal: git commit -- make message INFORMATIVE and USEFUL  
+5. In terminal: git push -- this pushes your local changes to the repo  
+
+## I did all of the procedures in the above !!.
+
+**Only submit the .Rmd and .pdf solution files.  Names should be formatted HW3_lastname_firstname.Rmd and HW3_lastname_firstname.pdf**
+
