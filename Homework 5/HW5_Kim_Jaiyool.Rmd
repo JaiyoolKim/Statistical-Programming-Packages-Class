@@ -1,0 +1,310 @@
+---
+title: "HW5_Kim_Jaiyool"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+   knitr::opts_chunk$set(echo = TRUE)
+```
+
+For each assignment, turn in by the due date/time.  Late assignments must be arranged prior to submission.  In every case, assignments are to be typed neatly using proper English in Markdown.  
+
+This week, we spoke about R's dual handling of vectors and matrices. In this homework, we will use this duality to our advantage to both simplify our code and perhaps speed up computation.
+
+## Problem 1
+
+Not a swirl problem.  :)
+
+New this week, please create a new R *Notebook* file within the project folder within the "05_vector_matrix_dual_math_speed" subfolder (file-->new-->R Notebook-->save as.  This time we will knit to html.
+
+The filename should be: HW5_lastname_firstname, i.e. for me it would be HW5_Settlage_Bob
+
+You will use this new R Notebook file to solve the following problems:
+
+
+## My ans.) 
+Ok. I made the sub folder like you ordered, and named this R notebook file as HW5_Kim_Jaiyool.
+
+
+## Problem 2: Sums of Squares
+
+One basic and recurring theme you will hear in statistics is sums of squares. Sums of squares error, regression, total, ...
+
+In this problem, we will calculate sums of squares total using:
+
+a. For loop to iterate through all data points calculating the summed squared difference between the data points and mean of the data.
+
+b. repeat part a, but use vector operations to effect the same computation
+
+In both cases, wrap the code in "system.time({})".  You should report the final answer and timings for both a and b.
+
+To generate the data, use:
+
+```{r eval=TRUE, echo=TRUE}
+
+    set.seed(12345)
+
+    y <- seq(from=1, to=100, length.out = 1e8) + rnorm(1e8)
+    
+
+    ## Way : a
+    
+    SSE_Calculating_function <- function(y){
+    
+      SSE.vector <- numeric(length(y)) ## Length = length(y)
+      
+    for(i in 1:length(y)){
+      
+      SSE.vector[i] <- (y[i]-mean(y))^2 ## Store the ith value of squared error value.
+      
+    }
+    
+    return(sum(SSE.vector))
+      
+    }
+    
+    
+ # SSE_Calculating_function(y)  
+    
+ #  system.time(SSE_Calculating_function(y))
+   
+   
+    ## Way : b
+   
+   y_Bar_vector <-rep(mean(y),each=length(y))
+ #  y_Bar_vector
+   
+   
+    ## Obtain SSE using vector opreation
+   
+  ( t(y-y_Bar_vector) )%*%( (y-y_Bar_vector) )
+   
+    system.time(t(y-y_Bar_vector)%*%(y-y_Bar_vector)) 
+    
+```
+
+## My ans.) 
+From the above comparison code (comparison the time spent to do the way a) and b)), we can conclude that the amount of time to get the SSE via vector operation is much shorter than that to obtain the same thing via a) way.
+
+## My Result
+
+1) for loop
+
+I cannot write down because even if 6 hours had been spent, the loop didn't end...
+  
+  
+2) vector operation 
+
+  result : 81775089561
+
+  user  system elapsed 
+  0.995   0.474   1.471 
+  
+## Problem 3: Using the dual nature to our advantage
+
+As above, sometimes using a mixture of true matrix math plus component operations cleans up our code giving better readibility. Suppose we wanted to form the following computation:
+
+\begin{itemize}
+    \item $while(abs(\Theta_0^{i}-\Theta_0^{i-1}) \text{ AND } abs(\Theta_1^{i}-\Theta_1^{i-1}) > tolerance) \text{ \{ }$
+    \begin{eqnarray*}
+        \Theta_0^i &=& \Theta_0^{i-1} - \alpha\frac{1}{m}\sum_{i=1}^{m} (h_0(x_i) -y_i)  \\
+        \Theta_1^i &=& \Theta_1^{i-1} - \alpha\frac{1}{m}\sum_{i=1}^{m} ((h_0(x_i) -y_i)x_i) 
+    \end{eqnarray*}
+    $\text{ \} }$
+\end{itemize}
+
+Where $h_0(x) = \Theta_0 + \Theta_1x$.  
+
+Given $\mathbf{X}$ and $\vec{h}$ below, implement the above algorithm and compare the results with lm(h~0+$\mathbf{X}$). State the tolerance used and the step size, $\alpha$.
+
+```{r, results='asis'}
+library("stargazer")
+
+    set.seed(1256)
+
+    theta <- as.matrix(c(1,2),nrow=2)
+    
+    Updated.theta <- as.matrix(c(3,4),nrow=2)
+    
+    X <- cbind(1,rep(1:10,10))
+    
+    h <- X%*%theta+rnorm(100,0,0.2)
+    
+    h0 <- X%*%theta
+    
+    alpha <- 0.0004 ## This value seems to be important as I think.
+    
+    tolerance <- 0.01
+    
+    ### alpha : 0.2, tolerance : 0.01
+    
+    Theta.Updated.function <- function(theta,Updated.theta,X,h,h0,alpha,tolerance){
+    
+    while( abs(theta[1,1]-Updated.theta[1,1])> tolerance & abs(theta[2,1]-Updated.theta[2,1]) > tolerance ) {
+      
+       Updated.theta[1,1] <- theta[1,1] - alpha*(1/nrow(X))*(sum(as.vector(h0 - h))) ## Update Beta_0
+       
+       Updated.theta[2,1] <- theta[2,1] - alpha*(1/nrow(X))*(sum(as.vector(t(X)%*%(h0 - h)))) ## Update Beta_1
+      
+    }
+      
+      return(c(Updated.theta[1,1],Updated.theta[2,1]))
+      
+    }
+    
+    
+    system.time(Theta.Updated.function(theta,Updated.theta,X,h,h0,alpha,tolerance))
+ 
+    
+       
+## lm function.
+    
+fit <- lm(h~X)
+
+## Regression result
+
+stargazer(fit,title="Regression Result",type='html', single.row=TRUE)
+    
+    
+  system.time( lm(h~X) )
+```
+
+## My ans.) 
+
+Actually, the difference between coefficients obtained from my function (Theta.Updated.function), and 'lm' function seems to be dependent on the selection of $\alpha$ (step size). After having done simulations with a variety of alpha values, I recognized that the smaller alpha, the more similar results with those of 'lm' function. Thus, we should come up with the idea that we can pre-fix the step size : $\alpha$ such as Cross-Validation (CV).
+
+## My Results 
+
+1) My function
+system.time(Theta.Updated.function(theta,Updated.theta,X,h,h0,alpha,tolerance))
+
+ user  system elapsed 
+  0.013   0.000   0.012 
+
+
+2) 'lm' built-in function
+system.time( lm(h~0+X) )
+
+  user  system elapsed 
+  0.002   0.000   0.003
+
+
+## Problem 4: Inverting matrices
+
+Ok, so John Cook makes some good points, but if you want to do:
+
+\begin{equation*}
+\hat\beta = (X'X)^{-1}X'\underline{y}
+\end{equation*}
+
+what are you to do??  Can you explain what is going on?
+
+## My ans.) 
+I will use the 'solve' command to obtain the inverse matrix of (X'X)^{-1} and use %*% for matrix multiplication between (X'X)^{-1} and 'y' (vector).
+
+
+## Problem 5: Need for speed challenge
+
+In this problem, we are looking to compute the following:
+
+\begin{equation}
+y = p + A B^{-1} (q - r)
+\end{equation}
+
+Where A, B, p, q and r are formed by:
+
+```{r eval=TRUE, echo=TRUE}
+
+    set.seed(12456) 
+    
+    G <- matrix(sample(c(0,0.5,1),size=16000,replace=T),ncol=10)
+    
+    R <- cor(G) # R: 10 * 10 correlation matrix of G
+    
+    C <- kronecker(R, diag(1600)) # C is a 16000 * 16000 block diagonal matrix
+    
+    id <- sample(1:16000,size=932,replace=F)
+    
+    q <- sample(c(0,0.5,1),size=15068,replace=T) # vector of length 15068
+    
+    A <- C[id, -id] # matrix of dimension 932 * 15068
+    
+    B <- C[-id, -id] # matrix of dimension 15068 * 15068
+    
+    p <- runif(932,0,1)
+    
+    r <- runif(15068,0,1)
+    
+    C<-NULL #save some memory space
+```
+
+
+# Part a.
+
+How large (bytes) are A and B? Without any optimization tricks, how long does the it take to calculate y?  
+
+## My code.) 
+```{r eval=TRUE, echo=TRUE}
+object.size(A)
+
+object.size(B)
+
+ system.time( y <- p + A%*%solve(B)%*%(q - r) )
+
+ y
+
+```
+## My answer.) 
+
+A=112347224 bytes
+B= 1816357208 bytes
+
+user     system elapsed 
+2.056   0.195  924.33 
+
+
+# Part b.
+
+How would you break apart this compute, i.e., what order of operations would make sense? Are there any mathmatical simplifications you can make? Is there anything about the vectors or matrices we might take advantage of?
+
+## My ans.) 
+
+A, B have many 0 elements, thus they are sparse matrices, and Positive Definite matrices. In this kind of matrix, we can apply cholesky decomposition to this kind of matrix (especially solving the inverse matrix computation) for speeding up the calculation procedure !!. 
+
+
+# Part c.
+
+Use ANY means (ANY package, ANY trick, etc) necessary to compute the above, fast.  Wrap your code in "system.time({})", everything you do past assignment "C <- NULL".
+
+```{r eval=TRUE, echo=TRUE}
+library(MASS)
+
+ system.time( y.another <- p + A%*%chol2inv(B)%*%(q - r) )
+
+ y.another
+```
+
+## My ans.) 
+
+By using 'chol2inv', system.time is spent like the below :
+
+user  system  elapsed 
+1.176   0.556  600.17
+  
+
+## Problem 6
+
+Push your homework as usual.
+
+**When it is time to submit, --ONLY-- submit the .Rmd and .nb.html solution files. Names should be formatted HW#_lastname_firstname.Rmd**
+
+I did it !!
+
+## Optional preperation for next class:  
+
+Next week we will talk about the apply family of functions... swirl?
