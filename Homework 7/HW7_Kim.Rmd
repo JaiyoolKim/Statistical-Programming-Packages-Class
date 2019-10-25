@@ -1,0 +1,394 @@
+---
+title: "HW7_Kim"
+subtitle: "Due Wednesday Oct 16, 2019"
+date: '`r Sys.Date()`'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For each assignment, turn in by the due date/time.  Late assignments must be arranged prior to submission.  In every case, assignments are to be typed neatly using proper English in Markdown.  
+
+This week, we spoke about parallelizing our R code.  To do this homework, we will use ARC resources.  I have added you to an "allocation" called arc-train4.  If you go to ondemand.arc.vt.edu, use the Rstudio interactive app on Cascades, use the basic bio version of R, arc-train4 as the account, request 10 cores for 48 hours.  The first time you do this, it will take 4-20 min to create the image being used, after that, it should be quick.  
+
+  
+## Problem 2
+
+Bootstrapping
+
+Recall the sensory data from five operators:    
+<http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat> 
+
+Sometimes, you really want more data to do the desired analysis, but going back to the "field" is often not an option. An often used method is bootstrapping.  Check out the second answer here for a really nice and detailed description of bootstrapping:
+<https://stats.stackexchange.com/questions/316483/manually-bootstrapping-linear-regression-in-r>.
+
+What we want to do is bootstrap the Sensory data to get non-parametric estimates of the parameters.  Assume that we can neglect item in the analysis such that we are really only interested in a linear model lm(y~operator).
+
+### Part a.  First, the question asked in the stackexchange was why is the supplied code not working.  This question was actually never answered.  What is the problem with the code?  If you want to duplicate the code to test it, use the quantreg package to get the data.
+
+### Part b. Bootstrap the analysis to get the parameter estimates using 100 bootstrapped samples.  Make sure to use system.time to get total time for the analysis.  You should probably make sure the samples are balanced across operators, ie each sample draws for each operator.
+
+### Part c. Redo the last problem but run the bootstraps in parallel (`cl <- makeCluster(8)`), don't forget to `stopCluster(cl)`).  Why can you do this?  Make sure to use system.time to get total time for the analysis.
+
+Create a single table summarizing the results and timing from part a and b. What are your thoughts?
+```{r eval=TRUE, echo=TRUE}
+library(readr)
+library(dplyr)
+library(knitr)
+library(tidyr)
+
+
+## Load the raw data via webpage
+
+  url<-"http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+  
+  Sensory_raw<-read.table(url, header=F, skip=1, fill=T, stringsAsFactors = F)
+    
+  ## see the raw data table.
+  
+    kable(Sensory_raw[c(1:8),] ,caption="Raw data") 
+
+    Sensory_tidy<-Sensory_raw[-1,]
+    
+  
+    Sensory_tidy_a<-filter(.data = Sensory_tidy,V1 %in% 1:10) %>%
+                    rename(Item=V1,V1=V2,V2=V3,V3=V4,V4=V5,V5=V6)
+    
+    Sensory_tidy_b<-filter(.data = Sensory_tidy,!(V1 %in% 1:10)) %>%
+                    mutate(Item=rep(as.character(1:10),each=2)) %>%
+                    mutate(V1=as.numeric(V1)) %>%
+                    select(c(Item,V1:V5))
+    
+    Sensory_tidy<-bind_rows(Sensory_tidy_a,Sensory_tidy_b)
+    
+    colnames(Sensory_tidy)<-c("Item",paste("Operator",1:5,sep="_"))
+    
+    Sensory_tidy<-Sensory_tidy %>%  
+      
+    gather(Operator,value,Operator_1:Operator_5) %>%
+      
+    mutate(Operator=parse_number(Operator))%>%
+      
+    arrange(Item)
+    
+ kable(Sensory_tidy[c(1:10),], caption="Tidy Sensory Data")   
+
+## b)
+    
+Sensory_tidy$Operator <- as.character(Sensory_tidy$Operator)
+
+lm.fit <- lm(value~Operator, data = Sensory_tidy)
+
+# Fitting OLS to estimate coefficients 'Beta'.
+
+beta_sen <- summary(lm.fit)$coefficient[2:5,1]
+beta_sen
+
+
+## bootstrapping (The number of replicates : 100)
+
+Boot_times=100
+
+sd.boot=data.frame(c(1:100),c(1:100),c(1:100),c(1:100))
+
+for(i in 1:Boot_times){
+  
+  # Nonparametric bootstrap
+  
+  bootdata=Sensory_tidy[sample(nrow(Sensory_tidy), size = 150, replace = TRUE),]
+  
+  sd.boot[i,]= summary(lm(value~Operator, data = bootdata))$coefficient[2:5,1]
+}
+
+elapsed.time<- system.time(for(i in 1:Boot_times){
+  
+  # Nonparametric bootstrap
+  
+  bootdata=Sensory_tidy[sample(nrow(Sensory_tidy), size = 150, replace = TRUE),]
+  
+  sd.boot[i,]= summary(lm(value~Operator, data = bootdata))$coefficient[2:5,1]
+})
+
+
+elapsed.time
+
+
+## c)
+
+library(parallel)
+
+## Using parallel
+
+cores <- max(4, detectCores()-1) ## I use the max.number of core as 4.
+
+cl <- makeCluster(cores)
+
+b<- system.time(for(i in 1:Boot_times){
+  
+  # nonparametric bootstrap
+  
+  bootdata=Sensory_tidy[sample(nrow(Sensory_tidy), size = 150, replace = TRUE),]
+  
+  sd.boot[i,]= summary(lm(value~Operator, data = bootdata))$coefficient[2:5,1]
+})
+
+beta_hat_b <- apply(sd.boot, 2, mean)
+
+
+cbind(beta_sen,beta_hat_b)
+```
+Based on the above R code, the higher the number of core, the faster the speed to get the values we want.
+
+
+## Problem 3
+
+Newton's method gives an answer for a root. To find multiple roots, you need to try different starting values.  There is no guarantee for what start will give a specific root, so you simply need to try multiple. From the plot of the function in HW4, problem 8, how many roots are there?
+
+Create a vector (`length.out=1000`) as a "grid" covering all the roots and extending +/-1 to either end.  
+
+### Part a.  Using one of the apply functions, find the roots noting the time it takes to run the apply function.
+
+```{r eval=TRUE, echo=TRUE}
+library(ggplot2) 
+library(tidyr)
+library(tidyverse)
+library(knitr)
+
+## Let us define the objective function.
+
+obj.function <- function(x){
+  
+  3^x - sin(x) + cos(5*x)
+  
+}
+
+
+
+## Define the first derivative of the objective function.
+
+dx.obj.function <- function(x) { 3^x*log(3) - cos(x) -5*sin(5*x) }
+
+
+
+## Set the sequence denoted by x.
+
+x <- seq(-10,-1,length.out = 1000) 
+
+
+#### R code to find the root(s) of the given objective function.
+## stop_criteria can be changed by users
+## (left_b, right_b) : the interval where we want to find the optimal solution.
+## x_0 : original initial value
+
+Newton_Method <- function(f, df, x_0, stop_criteria = 0.001, 
+                          max_iter = 10^3, left_b = -Inf, right_b = Inf) { 
+  
+  
+  # criteria for starting point x_0 
+  if (left_b > x_0 | right_b < x_0) { warning("your starting point is out of bound, 
+                                             please try point in the bounds") 
+    return(NA) } 
+  
+  # variable initialization 
+  iters <- 0 
+  
+  x_1 <- -10 ## Actual Initial value : very important 
+  ## if you wanna see the long progress of this algorithm.
+  
+  distance <- Inf 
+  
+  # do while until 
+  
+  # 1) x does not move 
+  
+  # 2) exceed the maximun iteration 
+  
+  # 3) the function value become close to zero 
+  
+  while ((distance > stop_criteria) &
+         (iters < max_iter) &
+         (abs(f(x_0)) > stop_criteria)){ 
+   
+     # newton method 
+    
+    x_1 <- x_0 - ( f(x_0) / df(x_0) ) 
+    
+    # out of bound case 
+    
+    if (x_1 <= left_b) {
+      
+      { x_1 <- left_b } 
+      
+    }
+    
+    if (right_b <= x_1) {
+      
+      { x_1 <- right_b } 
+    
+    }
+    
+    
+    distance <- abs(x_0 - x_1) 
+    
+    iters <- iters + 1 
+    
+    x_0 <- x_1 } 
+  
+  # return the final point 
+  
+#  if (x_0 == left_b | x_0 == right_b){ warning("\n", "Final point is on the boundary", "\n") }
+  
+#  if (iters > max_iter){ warning("\n", "Cannot find the root during the iteration.", "\n") }
+  
+#  cat("Final value of function:", f(x_0), "\n") 
+  
+  x_0 
+  
+  }
+
+## Drawing the shape of the objective function.
+
+p <- ggplot(data = data.frame(x = 0), mapping = aes(x = x)) 
+
+p <- p + stat_function(fun= obj.function, color="blue", size=1.0) + 
+  geom_hline(yintercept=0) + xlim(-10, -1) + ylim(-3, 3) 
+
+p + ggtitle("Plot of Objective Function")
+
+
+## Do simulate the following code to find the solution of objective function
+## in the set : (-10,1) (This is arbitrarily set.)
+
+## c.f) Actually, this code is really influenced by the initial value, so it is important
+## to set a variety of initial values to find the global minimum of the objective function.
+
+Newton_Method(f = obj.function, df = dx.obj.function, x_0 = -10, left_b = -8, right_b = -2)
+
+
+
+## We can apply functions simultaneously to find the optimal solutions via NR.
+
+roots <- sapply(x, Newton_Method, f = obj.function, df = dx.obj.function)
+
+## Record the time spent to find the solutions via Newton Rhapson Method.
+system.time(sapply(x, Newton_Method, f = obj.function, df = dx.obj.function))
+
+## plotting the points on the objective function's graph. 
+
+
+roots_p <- data.frame(x_star = roots, y_star = obj.function(roots)) 
+
+kable(roots_p$x_star, caption = "Solutions 
+      using parSapply with elapsed system.time : 0.034")
+
+
+p <- p + geom_point(data = roots_p, aes(x = x_star, y = y_star), 
+                    
+                    color = "red", size = 1.5) + theme_bw() 
+
+p + ggtitle("Roots of Objective Function between (-10, -1,length = 1000) via Newton Rhapson Method.")
+```
+As you can see the above graph, the 12 red colored points are the solutions (actually, there are numerous approximated value with 6-digits in the table 1) obtained by Newton Rhapson Method.
+Actually, When x value is greater than -2, there is no optimal solution such that equation meets zero value ($\because$ the shape of the graph of the objective function is greater than 0.)
+
+
+
+### Part b.  Repeat the apply command using the equivelant parApply command. Use 8 workers.  
+`cl <- makeCluster(8)`.
+```{r eval=TRUE, echo=TRUE}
+library(parallel)
+library(knitr)
+
+cl <- makeCluster(8)
+
+kable(parSapply(cl,-10:1,Newton_Method, f = obj.function, df = dx.obj.function),caption="Solutions 
+      using parSapply with elapsed system.time : 0.049")
+
+system.time(parSapply(cl,-10:1,Newton_Method, f = obj.function, df = dx.obj.function))
+```
+
+Create a table summarizing the roots and timing from both parts a) and b).  What are your thoughts?
+
+Since the size of the given data is not large, I think it is more time-saving to just use the 'sapply' function than to use the 'parsapply' function. If the size of the data is large, the amount of operations required will be heavy so that the using parsapply function will be more efficient.
+
+## Problem 4
+
+Gradient descent, like Newton's method, has "hyperparameters" that are determined outside the algorithm and there is no set rules for determing what settings to use. For gradient descent, you need to set a start value, a step size and tolerance. Using a step size of $1e^{-7}$ and tolerance of $1e^{-9}$, try 10000 different combinations of $\beta_0$ and $\beta_1$ across the range of possible $\beta$'s +/-1 from true making sure to take advantages of parallel computing opportunities. In my try at this, I found starting close to true took 1.1M iterations, so set a stopping rule for 5M and only keep a rolling 1000 iterations for both $\beta$'s. If this is confusing, see the solution to the last homework.
+
+### Part a. What if you were to change the stopping rule to include our knowledge of the true value?  Is this a good way to run this algorithm?  What is a potential problem?
+
+### Part c. Make a table of each starting value, the associated stopping value, and the number of iterations it took to get to that value. What fraction of starts ended prior to 5M? What are your thoughts on this algorithm?
+
+
+```{r eval=TRUE, echo=TRUE}
+ 
+ set.seed(11)
+ 
+x <- as.numeric(Sensory_tidy$Operator)
+
+y <- Sensory_tidy$value
+
+m <- length(y)
+
+X<-cbind(rep(1, length(Sensory_tidy$value)), x)
+
+theta<-c(0,2)
+ 
+ 
+ 
+compCost<-function(X, y, theta){
+   m <- length(y)
+   J <- sum((X%*%theta- y)^2)/(2*m)
+return(J)
+}
+
+
+gradDescent<-function(X, y, theta, alpha, num_iters){
+       m <- length(y)
+  J_hist <- rep(0, num_iters)
+  for(i in 1:num_iters){
+
+# this is a vectorized form for the gradient of the cost function
+# X is a 150x5 matrix, theta is a 5x1 column vector, y is a 150x1 column vector
+# X transpose is a 5x100 matrix. So t(X)%*%(X%*%theta - y) is a 5x1 column vector
+    
+    theta <- theta - alpha*(1/m)*(t(X)%*%(X%*%theta - y))
+    
+# this for-loop records the cost history for every iterative move of the gradient descent,
+# and it is obtained for plotting number of iterations against cost history.
+    
+    J_hist[i]  <- compCost(X, y, theta)
+  }
+# for a R function to return two values, we need to use a list to store them:
+  
+  results<-list(theta, J_hist)
+  return(results)
+}
+
+
+
+alpha <- exp(1)^(-7)  ## Learning Rate
+
+num_iters <- 5000000 ## Max.iteration number
+
+results <- gradDescent(X, y, theta, alpha, num_iters)
+
+theta <- results[[1]]
+
+cost_hist <- results[[2]]
+
+
+## Print the result values and Plots realted to the results.
+
+head(cost_hist)
+print(theta)
+length(cost_hist)
+plot(1:num_iters, cost_hist, type = 'l')
+
+ ```
+
+ 
+ I think it would be a good way when we set the stopping rule to include our knowledge of the true value. It would be more efficient way to figure out where the appropriate error, and the convergence can be made.
+
